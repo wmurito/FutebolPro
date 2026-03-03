@@ -1,0 +1,15 @@
+id,nome,nivel,posicao,gols_total,assistencias_total,jogos_total,vitorias_total
+1,Carlos Silva,5,Linha,42,18,60,38
+2,Marcos Oliveira,4,Linha,28,31,55,32
+3,Bruno Costa,4,Linha,35,12,58,30
+4,Rafael Lima,3,Linha,15,22,50,25
+5,Diego Santos,3,Linha,20,19,48,24
+6,Lucas Pereira,5,Linha,51,14,62,40
+7,Thiago Alves,2,Linha,8,11,45,18
+8,Felipe Rocha,4,Linha,30,25,57,33
+9,Eduardo Gomes,3,Linha,18,16,52,26
+10,Rodrigo Ferreira,2,Linha,6,9,43,16
+11,Anderson Melo,5,Linha,48,20,61,39
+12,Gustavo Souza,3,Linha,22,17,51,27
+13,João Almeida,1,Goleiro,2,4,55,28
+14,Paulo Cardoso,1,Goleiro,1,3,50,25
