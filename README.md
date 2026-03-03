@@ -5,7 +5,7 @@ Sistema de gestão para grupos de futebol amador.
 ## 🚀 Como rodar
 
 ```bash
-# Instalar dependências
+
 pip install -r requirements.txt
 
 # Iniciar aplicação
@@ -19,7 +19,7 @@ futebol_app/
 ├── .streamlit/
 │   └── config.toml        # Tema escuro + verde
 ├── data/
-│   └── jogadores.csv      # Seed inicial (14 atletas)
+│   └── jogadores.csv       # Seed inicial (14 atletas)
 ├── app.py                 # Interface Streamlit (UI)
 ├── logic.py               # Algoritmos de sorteio e ranking
 ├── database.py            # CRUD SQLite
