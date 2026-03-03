@@ -194,12 +194,12 @@ st.markdown("""
         position: relative;
     }
     .team-a { 
-        border: 1px solid rgba(178, 102, 255, 0.2); 
-        box-shadow: inset 0 0 40px rgba(178, 102, 255, 0.05), 0 10px 30px rgba(0,0,0,0.5);
+        border: 2px solid var(--color-neon-g);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
     }
     .team-b { 
-        border: 1px solid rgba(223, 179, 255, 0.2); 
-        box-shadow: inset 0 0 40px rgba(223, 179, 255, 0.05), 0 10px 30px rgba(0,0,0,0.5);
+        border: 2px solid var(--color-neon-b);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
     }
     
     .team-header {
@@ -211,22 +211,20 @@ st.markdown("""
         text-align: center;
     }
     .team-a .team-header { 
-        color: var(--color-text-main); 
-        text-shadow: 0 0 10px var(--color-neon-g), 0 0 20px var(--color-neon-g);
+        color: var(--color-neon-g); 
     }
     .team-b .team-header { 
-        color: var(--color-text-main); 
-        text-shadow: 0 0 10px var(--color-neon-b), 0 0 20px var(--color-neon-b);
+        color: var(--color-neon-b); 
     }
 
-    /* Player pill Neon */
+    /* Player pill Flat */
     .player-pill {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        background: rgba(0, 0, 0, 0.4);
+        background: rgba(0, 0, 0, 0.05);
         border: 1px solid var(--color-glass-border);
-        border-left: 3px solid var(--color-neon-g);
+        border-left: 4px solid var(--color-neon-g);
         border-radius: 6px;
         padding: 0.6rem 1rem;
         margin: 0.4rem 0;
@@ -237,25 +235,23 @@ st.markdown("""
         transition: all 0.2s;
     }
     .player-pill:hover {
-        background: rgba(178, 102, 255, 0.05);
+        background: rgba(178, 102, 255, 0.1);
         border-left-width: 6px;
     }
     .player-pill .nivel {
         background: var(--color-neon-g);
-        color: var(--color-bg-deep);
+        color: #fff;
         border-radius: 4px;
         padding: 0.1rem 0.5rem;
         font-size: 0.75rem;
         font-weight: 700;
-        box-shadow: 0 0 10px rgba(178, 102, 255, 0.4);
     }
     
     .player-pill-b { border-left-color: var(--color-neon-b); }
-    .player-pill-b:hover { background: rgba(223, 179, 255, 0.05); }
+    .player-pill-b:hover { background: rgba(223, 179, 255, 0.1); }
     .player-pill-b .nivel { 
         background: var(--color-neon-b); 
-        color: var(--color-bg-deep);
-        box-shadow: 0 0 10px rgba(223, 179, 255, 0.4);
+        color: #fff;
     }
 
     /* Cronômetro Arena */
@@ -374,9 +370,9 @@ st.markdown("""
     
     /* Botões Padrão */
     .stButton > button {
-        background: transparent !important;
-        color: var(--color-text-main) !important;
-        border: 1px solid rgba(255,255,255,0.3) !important;
+        background: #FFFFFF !important;
+        color: var(--color-neon-g) !important;
+        border: 1px solid var(--color-neon-g) !important;
         border-radius: 8px !important;
         font-family: var(--font-body) !important;
         font-weight: 600 !important;
@@ -385,23 +381,21 @@ st.markdown("""
         transition: all 0.2s ease !important;
     }
     .stButton > button:hover {
-        border-color: var(--color-text-main) !important;
-        background: rgba(255,255,255,0.05) !important;
-        box-shadow: 0 0 15px rgba(255,255,255,0.1);
+        background: var(--color-neon-g) !important;
+        color: #FFFFFF !important;
         transform: translateY(-2px);
     }
     
-    /* Botões Primary (Verde) */
+    /* Botões Primary (Roxo) */
     .stButton > button[data-testid="baseButton-primary"] {
-        background: rgba(178, 102, 255, 0.1) !important;
-        border-color: var(--color-neon-g) !important;
-        color: var(--color-neon-g) !important;
-        box-shadow: inset 0 0 10px rgba(178,102,255,0.1);
+        background: var(--color-neon-g) !important;
+        border: 1px solid var(--color-neon-g) !important;
+        color: #FFFFFF !important;
     }
     .stButton > button[data-testid="baseButton-primary"]:hover {
-        background: var(--color-neon-g) !important;
-        color: #000 !important;
-        box-shadow: 0 0 20px rgba(178,102,255,0.4);
+        background: var(--color-neon-b) !important;
+        border-color: var(--color-neon-b) !important;
+        transform: translateY(-2px);
     }
 
     /* Inputs numéricos e texts */
