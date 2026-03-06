@@ -101,6 +101,35 @@ st.markdown(f"""
         color: var(--color-text-main) !important;
         border-color: var(--color-glass-border) !important;
     }}
+
+    /* Compressão moderada do container principal */
+    .block-container {{
+        padding-top: 0.5rem !important;
+        padding-bottom: 0.5rem !important;
+        max-width: 100% !important;
+    }}
+
+    /* Gaps menores entre elementos verticais */
+    div[data-testid="stVerticalBlock"] > div:not(:last-child) {{
+        margin-bottom: -0.5rem !important;
+    }}
+
+    /* Checkboxes mais compactas */
+    div[data-testid="stCheckbox"] > label {{
+        padding-top: 0.05rem !important;
+        padding-bottom: 0.05rem !important;
+        font-size: 0.9rem !important;
+    }}
+
+    /* Selectbox e inputs menores */
+    div[data-testid="stSelectbox"] {{
+        margin-bottom: -0.5rem !important;
+    }}
+
+    /* Dividers menos invasivos */
+    [data-testid="stDivider"] {{
+        margin: 0.4rem 0 !important;
+    }}
 </style>
 """, unsafe_allow_html=True)
 
