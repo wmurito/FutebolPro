@@ -258,28 +258,22 @@ st.markdown("""
     .cronometro {
         font-family: var(--font-display);
         font-size: 7rem;
-        color: var(--color-text-main);
+        color: var(--color-neon-g);
         text-align: center;
         letter-spacing: 12px;
         line-height: 1;
-        padding: 2rem 0;
-        background: linear-gradient(180deg, #0f131c 0%, #110D17 100%);
-        border-radius: 20px;
-        border: 2px solid var(--color-neon-g);
-        box-shadow: 0 0 40px rgba(178, 102, 255, 0.1), inset 0 0 20px rgba(0,0,0,0.8);
-        text-shadow: 0 0 15px var(--color-neon-g);
-        margin: 1rem 0;
+        padding: 1rem 0;
+        text-shadow: 0 0 10px rgba(178, 102, 255, 0.3);
+        margin: 0.5rem 0;
     }
     .cronometro.urgente { 
         color: #FF2A2A; 
-        border-color: #FF2A2A;
-        text-shadow: 0 0 15px #FF2A2A;
-        box-shadow: 0 0 40px rgba(255, 42, 42, 0.1), inset 0 0 20px rgba(0,0,0,0.8);
+        text-shadow: 0 0 15px rgba(255, 42, 42, 0.5);
         animation: pulse_neon 1s infinite;
     }
     @keyframes pulse_neon {
-        0%, 100% { box-shadow: 0 0 40px rgba(255, 42, 42, 0.1); opacity: 1; }
-        50% { box-shadow: 0 0 60px rgba(255, 42, 42, 0.4); opacity: 0.8; }
+        0%, 100% { opacity: 1; text-shadow: 0 0 15px rgba(255, 42, 42, 0.5); }
+        50% { opacity: 0.6; text-shadow: 0 0 30px rgba(255, 42, 42, 0.8); }
     }
 
     /* Metric placar overrides */
@@ -482,9 +476,10 @@ st.markdown("""
             font-size: 0.75rem;
         }
         .cronometro {
-            font-size: 4rem;
-            letter-spacing: 6px;
-            padding: 1rem 0;
+            font-size: 2.5rem;
+            letter-spacing: 4px;
+            padding: 0.5rem 0;
+            margin: 0;
         }
         .team-header {
             font-size: 1.8rem;
