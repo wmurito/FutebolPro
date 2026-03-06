@@ -1,131 +1,56 @@
 """
-database.py - Funções de leitura/escrita de dados (SQLAlchemy + Supabase/PostgreSQL)
-PHP United FutebolManager
+database.py - PHP United FutebolManager
+Funções de acesso ao banco de dados via Supabase REST API (supabase-py).
+Usa HTTPS (porta 443) - funciona em qualquer plataforma, sem restrições IPv4/IPv6.
 """
 
 import pandas as pd
 from typing import Optional
 import logging
 import streamlit as st
-from sqlalchemy import create_engine, text
-from sqlalchemy.engine.url import URL
-from sqlalchemy.orm import sessionmaker
+from supabase import create_client, Client
 
 logger = logging.getLogger(__name__)
 
-import ssl
 
-def get_engine():
-    try:
-        db_url_str = st.secrets.get("SUPABASE_URL", None)
-        
-        if db_url_str and "supabase.co" in db_url_str:
-            # Garante que a URL use o adaptador psicopg2 com SSL ativado para nuvem
-            if db_url_str.startswith("postgres://"):
-                db_url_str = db_url_str.replace("postgres://", "postgresql://", 1)
-            
-            # Força o SSL mode na URL para prevenir timeout na nuvem e no AWS Supabase
-            if "?" not in db_url_str:
-                db_url_str += "?sslmode=require"
-            elif "sslmode" not in db_url_str:
-                db_url_str += "&sslmode=require"
-            
-            engine = create_engine(
-                db_url_str,
-                pool_pre_ping=True
-            )
-            return engine
-             
-    except Exception as e:
-        logger.warning(f"Erro ao inicializar DB Nuvem: {e}. Fallback local.")
-        
-    logger.info("Retornando SQLite")
-    return create_engine("sqlite:///data/futmanager.db", connect_args={"check_same_thread": False})
-
-engine = get_engine()
-
-def get_connection():
-    """Retorna conexão ativa com o banco (SQLAlchemy)."""
-    return engine.connect()
+@st.cache_resource
+def get_supabase() -> Client:
+    """Retorna o cliente Supabase (cacheado para não recriar a cada rerun)."""
+    url = st.secrets["SUPABASE_URL"]
+    key = st.secrets["SUPABASE_KEY"]
+    return create_client(url, key)
 
 
 def init_db() -> None:
-    """Inicializa o banco de dados com as tabelas necessárias."""
-    
-    # Se for SQLite fallback, usa autoincrement, se for Postgres, usa SERIAL
-    is_sqlite = engine.dialect.name == "sqlite"
-    id_type = "INTEGER PRIMARY KEY AUTOINCREMENT" if is_sqlite else "SERIAL PRIMARY KEY"
-    
-    with get_connection() as conn:
-        conn.execute(text(f"""
-            CREATE TABLE IF NOT EXISTS jogadores (
-                id {id_type},
-                nome TEXT NOT NULL UNIQUE,
-                nivel INTEGER NOT NULL CHECK(nivel BETWEEN 1 AND 5),
-                posicao TEXT NOT NULL DEFAULT 'Linha',
-                gols_total INTEGER DEFAULT 0,
-                assistencias_total INTEGER DEFAULT 0,
-                jogos_total INTEGER DEFAULT 0,
-                vitorias_total INTEGER DEFAULT 0,
-                ativo INTEGER DEFAULT 1,
-                criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-        """))
-        
-        conn.execute(text(f"""
-            CREATE TABLE IF NOT EXISTS partidas (
-                id {id_type},
-                data TEXT NOT NULL,
-                dia_semana TEXT NOT NULL,
-                time_a_ids TEXT NOT NULL,
-                time_b_ids TEXT NOT NULL,
-                score_a INTEGER DEFAULT 0,
-                score_b INTEGER DEFAULT 0,
-                gols_a INTEGER DEFAULT 0,
-                gols_b INTEGER DEFAULT 0,
-                status TEXT DEFAULT 'em_andamento',
-                criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-        """))
-        
-        conn.execute(text(f"""
-            CREATE TABLE IF NOT EXISTS scouts (
-                id {id_type},
-                partida_id INTEGER NOT NULL,
-                jogador_id INTEGER NOT NULL,
-                tipo TEXT NOT NULL CHECK(tipo IN ('gol', 'assistencia')),
-                minuto INTEGER,
-                time TEXT NOT NULL CHECK(time IN ('A', 'B')),
-                criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (partida_id) REFERENCES partidas(id),
-                FOREIGN KEY (jogador_id) REFERENCES jogadores(id)
-            );
-        """))
-        conn.commit()
+    """Verifica conexão com o banco. As tabelas são criadas pelo schema.sql no Supabase."""
+    try:
+        sb = get_supabase()
+        # Testa conexão lendo um registro
+        sb.table("jogadores").select("id").limit(1).execute()
+        logger.info("Conexão com Supabase OK!")
+    except Exception as e:
+        logger.error(f"Erro ao conectar ao Supabase: {e}")
+        raise
 
 
 def seed_jogadores_from_csv() -> bool:
-    """
-    Importa jogadores do CSV para o banco caso esteja vazio.
-    """
+    """Importa jogadores do CSV para o banco caso esteja vazio."""
     try:
-        with get_connection() as conn:
-            result = conn.execute(text("SELECT COUNT(*) as c FROM jogadores")).fetchone()
-            count = result[0]
-            if count > 0:
-                return False
+        sb = get_supabase()
+        result = sb.table("jogadores").select("id").limit(1).execute()
+        if result.data:
+            return False  # Já tem dados
 
-        # Como fallback caso exista arquivo local CSV
         import os
         if not os.path.exists("data/jogadores.csv"):
             return False
 
         df = pd.read_csv("data/jogadores.csv")
         df.drop(columns=["id"], inplace=True, errors="ignore")
-        
-        # Conexão engine pra to_sql
-        df.to_sql("jogadores", engine, if_exists="append", index=False)
-        logger.info(f"Importados {len(df)} jogadores do CSV.")
+
+        rows = df.to_dict("records")
+        sb.table("jogadores").insert(rows).execute()
+        logger.info(f"Importados {len(rows)} jogadores do CSV.")
         return True
     except Exception as e:
         logger.error(f"Erro ao seed: {e}")
@@ -136,21 +61,19 @@ def seed_jogadores_from_csv() -> bool:
 
 def get_jogadores(apenas_ativos: bool = True) -> pd.DataFrame:
     """Retorna DataFrame com todos os jogadores."""
-    query = "SELECT * FROM jogadores"
+    sb = get_supabase()
+    q = sb.table("jogadores").select("*").order("nome")
     if apenas_ativos:
-        query += " WHERE ativo = 1"
-    query += " ORDER BY nome"
-    
-    with get_connection() as conn:
-        df = pd.read_sql(text(query), conn)
-    return df
+        q = q.eq("ativo", 1)
+    result = q.execute()
+    return pd.DataFrame(result.data) if result.data else pd.DataFrame()
 
 
 def get_jogador_by_id(jogador_id: int) -> Optional[dict]:
     """Retorna um jogador pelo ID."""
-    with get_connection() as conn:
-        df = pd.read_sql(text("SELECT * FROM jogadores WHERE id = :jid"), conn, params={"jid": jogador_id})
-    return df.to_dict("records")[0] if not df.empty else None
+    sb = get_supabase()
+    result = sb.table("jogadores").select("*").eq("id", jogador_id).execute()
+    return result.data[0] if result.data else None
 
 
 def upsert_jogador(
@@ -159,23 +82,18 @@ def upsert_jogador(
     posicao: str = "Linha",
     jogador_id: Optional[int] = None,
 ) -> bool:
-    """
-    Cria ou atualiza um jogador.
-    """
+    """Cria ou atualiza um jogador."""
     try:
-        with get_connection() as conn:
-            if jogador_id:
-                conn.execute(
-                    text("UPDATE jogadores SET nome=:n, nivel=:v, posicao=:p WHERE id=:jid"),
-                    {"n": nome, "v": nivel, "p": posicao, "jid": jogador_id},
-                )
-            else:
-                conn.execute(
-                    text("INSERT INTO jogadores (nome, nivel, posicao) VALUES (:n,:v,:p)"),
-                    {"n": nome, "v": nivel, "p": posicao},
-                )
-            conn.commit()
-            return True
+        sb = get_supabase()
+        if jogador_id:
+            sb.table("jogadores").update(
+                {"nome": nome, "nivel": nivel, "posicao": posicao}
+            ).eq("id", jogador_id).execute()
+        else:
+            sb.table("jogadores").insert(
+                {"nome": nome, "nivel": nivel, "posicao": posicao}
+            ).execute()
+        return True
     except Exception as e:
         logger.error(f"Erro upsert_jogador: {e}")
         return False
@@ -183,14 +101,11 @@ def upsert_jogador(
 
 def toggle_jogador_ativo(jogador_id: int) -> None:
     """Ativa/desativa um jogador."""
-    with get_connection() as conn:
-        # SQLite converte NOT ativo direto mas Postgres/SQLAlchemy precisam ser precisos int vs boolean
-        # SQLite armazena BOOLEAN como 0 ou 1, Postgres suporta type BOOL ou Int.
-        conn.execute(
-            text("UPDATE jogadores SET ativo = CASE WHEN ativo = 1 THEN 0 ELSE 1 END WHERE id = :jid"),
-            {"jid": jogador_id},
-        )
-        conn.commit()
+    sb = get_supabase()
+    jogador = get_jogador_by_id(jogador_id)
+    if jogador:
+        novo_status = 0 if jogador["ativo"] else 1
+        sb.table("jogadores").update({"ativo": novo_status}).eq("id", jogador_id).execute()
 
 
 # ─────────────────────── PARTIDAS ───────────────────────
@@ -198,53 +113,45 @@ def toggle_jogador_ativo(jogador_id: int) -> None:
 def criar_partida(
     data: str,
     dia_semana: str,
-    time_a_ids: list[int],
-    time_b_ids: list[int],
+    time_a_ids: list,
+    time_b_ids: list,
 ) -> int:
-    """
-    Cria uma nova partida no banco.
-    """
-    with get_connection() as conn:
-        result = conn.execute(
-            text("""INSERT INTO partidas (data, dia_semana, time_a_ids, time_b_ids)
-               VALUES (:dt, :dia, :ta, :tb) RETURNING id"""),
-            {
-                "dt": data,
-                "dia": dia_semana,
-                "ta": ",".join(map(str, time_a_ids)),
-                "tb": ",".join(map(str, time_b_ids)),
-            },
-        )
-        partida_id = result.fetchone()[0]
-        conn.commit()
-        return partida_id
+    """Cria uma nova partida no banco."""
+    sb = get_supabase()
+    result = sb.table("partidas").insert({
+        "data": data,
+        "dia_semana": dia_semana,
+        "time_a_ids": ",".join(map(str, time_a_ids)),
+        "time_b_ids": ",".join(map(str, time_b_ids)),
+        "status": "em_andamento",
+    }).execute()
+    return result.data[0]["id"]
 
 
 def get_partida(partida_id: int) -> Optional[dict]:
     """Retorna uma partida pelo ID."""
-    with get_connection() as conn:
-        df = pd.read_sql(text("SELECT * FROM partidas WHERE id = :pid"), conn, params={"pid": partida_id})
-    return df.to_dict("records")[0] if not df.empty else None
+    sb = get_supabase()
+    result = sb.table("partidas").select("*").eq("id", partida_id).execute()
+    return result.data[0] if result.data else None
 
 
 def get_partidas(limit: int = 20) -> pd.DataFrame:
     """Retorna as últimas partidas."""
-    with get_connection() as conn:
-        df = pd.read_sql(
-            text(f"SELECT * FROM partidas ORDER BY criado_em DESC LIMIT {limit}"), conn
-        )
-    return df
+    sb = get_supabase()
+    result = sb.table("partidas").select("*").order("criado_em", desc=True).limit(limit).execute()
+    return pd.DataFrame(result.data) if result.data else pd.DataFrame()
 
 
 def finalizar_partida(partida_id: int, score_a: int, score_b: int) -> None:
     """Finaliza uma partida com o placar final."""
-    with get_connection() as conn:
-        conn.execute(
-            text("""UPDATE partidas SET status='finalizada', score_a=:sa, score_b=:sb, gols_a=:ga, gols_b=:gb
-               WHERE id=:pid"""),
-            {"sa": score_a, "sb": score_b, "ga": score_a, "gb": score_b, "pid": partida_id},
-        )
-        conn.commit()
+    sb = get_supabase()
+    sb.table("partidas").update({
+        "status": "finalizada",
+        "score_a": score_a,
+        "score_b": score_b,
+        "gols_a": score_a,
+        "gols_b": score_b,
+    }).eq("id", partida_id).execute()
     _atualizar_stats_pos_partida(partida_id, score_a, score_b)
 
 
@@ -254,27 +161,37 @@ def _atualizar_stats_pos_partida(partida_id: int, score_a: int, score_b: int) ->
     if not partida:
         return
 
+    sb = get_supabase()
     ids_a = [int(i) for i in partida["time_a_ids"].split(",")]
     ids_b = [int(i) for i in partida["time_b_ids"].split(",")]
     todos = ids_a + ids_b
     vencedores = ids_a if score_a > score_b else (ids_b if score_b > score_a else [])
 
-    with get_connection() as conn:
-        # Incrementa jogos
-        for jid in todos:
-            conn.execute(text("UPDATE jogadores SET jogos_total = jogos_total + 1 WHERE id=:jid"), {"jid": jid})
+    # Incrementa jogos para todos
+    for jid in todos:
+        j = get_jogador_by_id(jid)
+        if j:
+            sb.table("jogadores").update(
+                {"jogos_total": (j.get("jogos_total") or 0) + 1}
+            ).eq("id", jid).execute()
 
-        # Incrementa vitórias
-        for jid in vencedores:
-            conn.execute(text("UPDATE jogadores SET vitorias_total = vitorias_total + 1 WHERE id=:jid"), {"jid": jid})
+    # Incrementa vitórias
+    for jid in vencedores:
+        j = get_jogador_by_id(jid)
+        if j:
+            sb.table("jogadores").update(
+                {"vitorias_total": (j.get("vitorias_total") or 0) + 1}
+            ).eq("id", jid).execute()
 
-        # Gols e assistências via scouts
-        scouts = pd.read_sql(text("SELECT * FROM scouts WHERE partida_id = :pid"), conn, params={"pid": partida_id})
-        for _, scout in scouts.iterrows():
-            col = "gols_total" if scout["tipo"] == "gol" else "assistencias_total"
-            conn.execute(text(f"UPDATE jogadores SET {col} = {col} + 1 WHERE id=:jid"), {"jid": scout["jogador_id"]})
-
-        conn.commit()
+    # Gols e assistências via scouts
+    scouts_result = sb.table("scouts").select("*").eq("partida_id", partida_id).execute()
+    for scout in (scouts_result.data or []):
+        col = "gols_total" if scout["tipo"] == "gol" else "assistencias_total"
+        j = get_jogador_by_id(scout["jogador_id"])
+        if j:
+            sb.table("jogadores").update(
+                {col: (j.get(col) or 0) + 1}
+            ).eq("id", scout["jogador_id"]).execute()
 
 
 # ─────────────────────── SCOUTS ───────────────────────
@@ -288,49 +205,59 @@ def registrar_scout(
 ) -> bool:
     """Registra um evento de scout."""
     try:
-        with get_connection() as conn:
-            conn.execute(
-                text("""INSERT INTO scouts (partida_id, jogador_id, tipo, time, minuto)
-                   VALUES (:pid, :jid, :tipo, :time, :min)"""),
-                {"pid": partida_id, "jid": jogador_id, "tipo": tipo, "time": time, "min": minuto},
-            )
-            conn.commit()
-            return True
+        sb = get_supabase()
+        sb.table("scouts").insert({
+            "partida_id": partida_id,
+            "jogador_id": jogador_id,
+            "tipo": tipo,
+            "time": time,
+            "minuto": minuto,
+        }).execute()
+        return True
     except Exception as e:
         logger.error(f"Erro registrar_scout: {e}")
         return False
 
 
 def get_scouts_partida(partida_id: int) -> pd.DataFrame:
-    """Retorna todos os scouts de uma partida."""
-    with get_connection() as conn:
-        df = pd.read_sql(
-            text("""SELECT s.*, j.nome as jogador_nome
-               FROM scouts s
-               JOIN jogadores j ON s.jogador_id = j.id
-               WHERE s.partida_id = :pid
-               ORDER BY s.criado_em"""),
-            conn,
-            params={"pid": partida_id},
-        )
-    return df
+    """Retorna todos os scouts de uma partida com nome do jogador."""
+    sb = get_supabase()
+    # supabase-py suporta join com foreign key
+    result = sb.table("scouts").select(
+        "*, jogadores(nome)"
+    ).eq("partida_id", partida_id).order("criado_em").execute()
+
+    if not result.data:
+        return pd.DataFrame()
+
+    rows = []
+    for s in result.data:
+        rows.append({
+            "id": s["id"],
+            "partida_id": s["partida_id"],
+            "jogador_id": s["jogador_id"],
+            "tipo": s["tipo"],
+            "time": s["time"],
+            "minuto": s.get("minuto"),
+            "criado_em": s.get("criado_em"),
+            "jogador_nome": s.get("jogadores", {}).get("nome", "?") if s.get("jogadores") else "?",
+        })
+    return pd.DataFrame(rows)
 
 
 def deletar_scout(scout_id: int) -> None:
     """Remove um scout pelo ID."""
-    with get_connection() as conn:
-        conn.execute(text("DELETE FROM scouts WHERE id = :sid"), {"sid": scout_id})
-        conn.commit()
+    sb = get_supabase()
+    sb.table("scouts").delete().eq("id", scout_id).execute()
 
 
 # ─────────────────────── RANKING ───────────────────────
 
 def calcular_ranking() -> pd.DataFrame:
     """Calcula o ranking dos jogadores."""
-    with get_connection() as conn:
-        df = pd.read_sql(
-            text("SELECT * FROM jogadores WHERE ativo=1 AND posicao='Linha'"), conn
-        )
+    sb = get_supabase()
+    result = sb.table("jogadores").select("*").eq("ativo", 1).eq("posicao", "Linha").execute()
+    df = pd.DataFrame(result.data) if result.data else pd.DataFrame()
 
     if df.empty:
         return df
