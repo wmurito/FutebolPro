@@ -13,27 +13,33 @@ from sqlalchemy.orm import sessionmaker
 
 logger = logging.getLogger(__name__)
 
+import ssl
+
 def get_engine():
     try:
-        # Tenta pegar connection string pronta 
-        db_url = st.secrets.get("SUPABASE_URL", None)
+        db_url_str = st.secrets.get("SUPABASE_URL", None)
         
-        # O Streamlit Cloud as vezes corta ou encoda duplamente.
-        if db_url and "supabase.co" in db_url:
-             # Correção para dialeto postgres correto usando pg8000
-             if db_url.startswith("postgres://"):
-                 db_url = db_url.replace("postgres://", "postgresql+pg8000://", 1)
-             elif db_url.startswith("postgresql://"):
-                 db_url = db_url.replace("postgresql://", "postgresql+pg8000://", 1)
-                 
-             engine = create_engine(db_url, pool_pre_ping=True)
-             return engine
+        if db_url_str and "supabase.co" in db_url_str:
+            # Garante que a URL use o adaptador psicopg2 com SSL ativado para nuvem
+            if db_url_str.startswith("postgres://"):
+                db_url_str = db_url_str.replace("postgres://", "postgresql://", 1)
+            
+            # Força o SSL mode na URL para prevenir timeout na nuvem e no AWS Supabase
+            if "?" not in db_url_str:
+                db_url_str += "?sslmode=require"
+            elif "sslmode" not in db_url_str:
+                db_url_str += "&sslmode=require"
+            
+            engine = create_engine(
+                db_url_str,
+                pool_pre_ping=True
+            )
+            return engine
              
     except Exception as e:
-        logger.warning(f"Erro ao parsear URL do Supabase: {e}. Usando fallback local.")
+        logger.warning(f"Erro ao inicializar DB Nuvem: {e}. Fallback local.")
         
-    # Fallback local SQLite
-    logger.info("Retornando SQLite (Desenvolvimento)")
+    logger.info("Retornando SQLite")
     return create_engine("sqlite:///data/futmanager.db", connect_args={"check_same_thread": False})
 
 engine = get_engine()
