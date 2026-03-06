@@ -8,27 +8,30 @@ from typing import Optional
 import logging
 import streamlit as st
 from sqlalchemy import create_engine, text
+from sqlalchemy.engine.url import URL
 from sqlalchemy.orm import sessionmaker
 
 logger = logging.getLogger(__name__)
 
-# Configuração da URL do banco via secrets do Streamlit
-# Fallback local se não estiver no st.secrets (apenas para testes locais em SQLite se precisar,
-# mas como estamos migrando pro Supabase, deixaremos um fallback pra um banco SQlite temporal)
-try:
-    DB_URL = st.secrets["SUPABASE_URL"]
-    # SQLAlchemy requer o dialeto 'postgresql://' não 'postgres://' se vier antigo
-    if DB_URL.startswith("postgres://"):
-        DB_URL = DB_URL.replace("postgres://", "postgresql://", 1)
-except Exception:
-    logger.warning("Supabase URL não encontrada nas secrets. Criando um sqlite local.")
-    DB_URL = "sqlite:///data/futmanager.db"
-
-
 def get_engine():
-    # check_same_thread apenas para SQLite local se houver
-    args = {"check_same_thread": False} if "sqlite" in DB_URL else {}
-    return create_engine(DB_URL, connect_args=args)
+    try:
+        # Tenta pegar connection string pronta 
+        db_url = st.secrets.get("SUPABASE_URL", None)
+        
+        # O Streamlit Cloud as vezes corta ou encoda duplamente. Se db_url estiver quebrado (falha na engine),
+        # podemos construir um novo dinâmico
+        if db_url and "supabase.co" in db_url:
+             # Correção para dialeto postgres correto
+             db_url = db_url.replace("postgres://", "postgresql://", 1)
+             engine = create_engine(db_url, pool_pre_ping=True)
+             return engine
+             
+    except Exception as e:
+        logger.warning(f"Erro ao parsear URL do Supabase: {e}. Usando fallback local.")
+        
+    # Fallback local SQLite
+    logger.info("Retornando SQLite (Desenvolvimento)")
+    return create_engine("sqlite:///data/futmanager.db", connect_args={"check_same_thread": False})
 
 engine = get_engine()
 
@@ -41,7 +44,7 @@ def init_db() -> None:
     """Inicializa o banco de dados com as tabelas necessárias."""
     
     # Se for SQLite fallback, usa autoincrement, se for Postgres, usa SERIAL
-    is_sqlite = "sqlite" in DB_URL
+    is_sqlite = engine.dialect.name == "sqlite"
     id_type = "INTEGER PRIMARY KEY AUTOINCREMENT" if is_sqlite else "SERIAL PRIMARY KEY"
     
     with get_connection() as conn:
