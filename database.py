@@ -18,11 +18,14 @@ def get_engine():
         # Tenta pegar connection string pronta 
         db_url = st.secrets.get("SUPABASE_URL", None)
         
-        # O Streamlit Cloud as vezes corta ou encoda duplamente. Se db_url estiver quebrado (falha na engine),
-        # podemos construir um novo dinâmico
+        # O Streamlit Cloud as vezes corta ou encoda duplamente.
         if db_url and "supabase.co" in db_url:
-             # Correção para dialeto postgres correto
-             db_url = db_url.replace("postgres://", "postgresql://", 1)
+             # Correção para dialeto postgres correto usando pg8000
+             if db_url.startswith("postgres://"):
+                 db_url = db_url.replace("postgres://", "postgresql+pg8000://", 1)
+             elif db_url.startswith("postgresql://"):
+                 db_url = db_url.replace("postgresql://", "postgresql+pg8000://", 1)
+                 
              engine = create_engine(db_url, pool_pre_ping=True)
              return engine
              
