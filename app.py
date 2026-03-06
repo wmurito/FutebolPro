@@ -665,7 +665,12 @@ if pagina == "🏠 Dashboard":
 
 # ── GESTÃO DE JOGADORES ──
 elif pagina == "📋 Gestão de Jogadores":
-    st.title("📋 Gestão de Jogadores")
+    st.markdown("""
+    <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:1rem;">
+        <span style="font-size:1.6rem;">📋</span>
+        <span style="font-size:1.3rem;font-weight:700;color:var(--color-text-main);">Gestão de Jogadores</span>
+    </div>
+    """, unsafe_allow_html=True)
 
     tab_lista, tab_add, tab_edit = st.tabs(["Lista Completa", "Adicionar Jogador", "Editar / Ativar"])
 
@@ -753,35 +758,40 @@ elif pagina == "📋 Gestão de Jogadores":
 
 # ── SORTEIO DE TIMES ──
 elif pagina == "🎲 Sorteio de Times":
-    st.title("🎲 Sorteio de Times Equilibrados")
+    st.markdown("""
+    <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.5rem;">
+        <span style="font-size:1.6rem;">🎲</span>
+        <span style="font-size:1.3rem;font-weight:700;color:var(--color-text-main);">Sorteio de Times</span>
+    </div>
+    """, unsafe_allow_html=True)
 
     jogadores = db.get_jogadores()
     if jogadores.empty:
         st.warning("Nenhum jogador ativo cadastrado.")
         st.stop()
 
-    st.subheader("1️⃣ Selecionar Presentes")
-    st.caption("Selecione no mínimo 14 jogadores (2 goleiros + 12 de linha). Pode ter reservas!")
+    st.markdown("<p style='color:var(--color-text-muted);font-size:0.82rem;margin-bottom:0.5rem;'>✅ Mín. 14 jogadores (2 goleiros + 12 de linha)</p>", unsafe_allow_html=True)
 
-    col_linha, col_goleiro = st.columns([3, 1])
-
-    with col_goleiro:
-        st.markdown("**🧤 Goleiros**")
-        goleiros_df = jogadores[jogadores["posicao"] == "Goleiro"]
-        goleiros_presentes = []
-        for _, g in goleiros_df.iterrows():
+    # ── Goleiros ──
+    st.markdown("<div style='font-weight:700;font-size:0.9rem;color:#A78BFA;margin-bottom:0.3rem;'>🧤 GOLEIROS</div>", unsafe_allow_html=True)
+    goleiros_df = jogadores[jogadores["posicao"] == "Goleiro"]
+    goleiros_presentes = []
+    gcols = st.columns(len(goleiros_df) if not goleiros_df.empty else 1)
+    for i, (_, g) in enumerate(goleiros_df.iterrows()):
+        with gcols[i % len(gcols)]:
             if st.checkbox(g["nome"], key=f"gol_{g['id']}"):
                 goleiros_presentes.append(g.to_dict())
 
-    with col_linha:
-        st.markdown("**👟 Jogadores de Linha**")
-        linha_df = jogadores[jogadores["posicao"] == "Linha"]
-        linha_presentes = []
-        cols = st.columns(3)
-        for i, (_, j) in enumerate(linha_df.iterrows()):
-            with cols[i % 3]:
-                if st.checkbox(f"{j['nome']} {'★'*int(j['nivel'])}", key=f"lin_{j['id']}"):
-                    linha_presentes.append(j.to_dict())
+    # ── Linha ──
+    st.markdown("<div style='font-weight:700;font-size:0.9rem;color:#A78BFA;margin:0.6rem 0 0.3rem;'>👟 JOGADORES DE LINHA</div>", unsafe_allow_html=True)
+    linha_df = jogadores[jogadores["posicao"] == "Linha"]
+    linha_presentes = []
+    cols = st.columns(3)
+    for i, (_, j) in enumerate(linha_df.iterrows()):
+        with cols[i % 3]:
+            stars = "★" * int(j['nivel'])
+            if st.checkbox(f"{j['nome']} {stars}", key=f"lin_{j['id']}"):
+                linha_presentes.append(j.to_dict())
 
     todos_presentes = goleiros_presentes + linha_presentes
     validacao = logic.validar_presenca(todos_presentes)
@@ -816,11 +826,9 @@ elif pagina == "🎲 Sorteio de Times":
         summary = logic.summary_times(st.session_state.time_a, st.session_state.time_b)
 
         # Exibir resultado
-        st.markdown("---")
-        st.subheader("2️⃣ Times Sorteados")
-
-        equil_badge = "✅ Perfeitamente equilibrado!" if summary["equilibrado"] else f"⚠️ Diferença: {summary['diferenca']} ponto(s)"
-        st.markdown(f"**{equil_badge}**")
+        st.divider()
+        equil_badge = "✅ Equilibrado!" if summary["equilibrado"] else f"⚠️ Dif: {summary['diferenca']}pt"
+        st.markdown(f"<div style='display:flex;align-items:center;gap:0.5rem;margin-bottom:0.8rem;'><span style='font-size:1.3rem;font-weight:700;'>⚽ Times</span><span style='font-size:0.85rem;color:#86EFAC;'>{equil_badge}</span></div>", unsafe_allow_html=True)
 
         col_a, col_sep, col_b = st.columns([5, 1, 5])
 
@@ -858,7 +866,7 @@ elif pagina == "🎲 Sorteio de Times":
             st.markdown("</div>", unsafe_allow_html=True)
 
         st.divider()
-        st.subheader("3️⃣ Iniciar Partida")
+        st.markdown("<div style='font-size:1.1rem;font-weight:700;margin-bottom:0.5rem;'>🚀 Iniciar Partida</div>", unsafe_allow_html=True)
         
         col_data, col_dia, col_ini = st.columns([2, 2, 1])
         with col_data:
@@ -890,7 +898,6 @@ elif pagina == "🎲 Sorteio de Times":
 
 # ── PARTIDA AO VIVO ──
 elif pagina == "⚽ Partida ao Vivo":
-    st.title("⚽ Partida ao Vivo")
 
     if not st.session_state.partida_ativa:
         st.warning("Nenhuma partida ativa. Vá até **Sorteio de Times** para iniciar uma.")
@@ -945,26 +952,24 @@ elif pagina == "⚽ Partida ao Vivo":
 
     # ABA 1: PARTIDA (Controles e Log)
     with tab_partida:
-        st.subheader("⏱️ Controles de Jogo")
-        col_ctrl = st.columns([1.5, 1, 1])
-        
-        with col_ctrl[0]:
-            duracao_min = st.number_input("Duração (min)", min_value=5, max_value=90, value=45, step=5, key="duracao_partida_inp")
+        # Controles compactos em linha
+        col_dur, col_play, col_reset = st.columns([1.2, 1, 1])
+        with col_dur:
+            duracao_min = st.number_input("⏱ Duração (min)", min_value=5, max_value=90, value=10, step=5, key="duracao_partida_inp")
             st.session_state.tempo_total_seg = duracao_min * 60
-
-        with col_ctrl[1]:
-            st.markdown("<br>", unsafe_allow_html=True)
-            if st.button("▶️ Iniciar / ⏸️ Pausar", use_container_width=True):
+        with col_play:
+            label_play = "⏸️ Pausar" if st.session_state.cronometro_rodando else "▶️ Iniciar"
+            st.markdown("<div style='height:0.5rem'></div>", unsafe_allow_html=True)
+            if st.button(label_play, use_container_width=True, type="primary"):
                 if not st.session_state.cronometro_rodando:
                     if st.session_state.tempo_inicio is None:
                         st.session_state.tempo_inicio = time.time()
                     st.session_state.cronometro_rodando = True
                 else:
                     st.session_state.cronometro_rodando = False
-
-        with col_ctrl[2]:
-            st.markdown("<br>", unsafe_allow_html=True)
-            if st.button("🔄 Resetar Temp.", use_container_width=True):
+        with col_reset:
+            st.markdown("<div style='height:0.5rem'></div>", unsafe_allow_html=True)
+            if st.button("🔄 Resetar", use_container_width=True):
                 st.session_state.cronometro_rodando = False
                 st.session_state.tempo_inicio = None
 
@@ -1000,38 +1005,37 @@ elif pagina == "⚽ Partida ao Vivo":
 
     # ABA 2: ESCALAÇÕES E SCOUTS RÁPIDOS
     with tab_escalacao:
-        st.markdown("<h3 style='margin-bottom: 2rem;'>Escalações & Adicionar Eventos</h3>", unsafe_allow_html=True)
-        
         col_sa, col_sb = st.columns(2)
         
-        def render_lineup(time_jogadores: list, time_key: str, color_hex: str):
-            st.markdown(f"**TIME {time_key}**", unsafe_allow_html=True)
+        def render_lineup(time_jogadores: list, time_key: str):
+            color = "#A78BFA" if time_key == "A" else "#C4B5FD"
+            icon = "🛡️" if time_key == "A" else "🦅"
+            st.markdown(f"""
+            <div class="team-card team-{'a' if time_key == 'A' else 'b'}" style="margin-bottom:0.5rem;">
+                <div class="team-header" style="font-size:1rem;margin-bottom:0.6rem;">{icon} TIME {time_key}</div>
+            </div>
+            """, unsafe_allow_html=True)
             if not time_jogadores:
+                st.caption("Sem jogadores")
                 return
                 
             for j in time_jogadores:
-                c1, c2, c3 = st.columns([2.5, 1, 1])
-                # Botões super compactos para adicionar gol ou assistência sem form
-                c1.markdown(f"<div style='padding-top:0.4rem; font-size: 0.95rem; font-weight: 500;'>{j['nome']}</div>", unsafe_allow_html=True)
-                
-                if c2.button("⚽", key=f"btn_gol_{time_key}_{j['id']}", help=f"Gol para {j['nome']}"):
+                nome_display = j['nome'].split()[0]  # só primeiro nome para economizar espaço
+                c1, c2, c3 = st.columns([3, 1, 1])
+                c1.markdown(f"<div style='padding-top:0.35rem;font-size:0.9rem;font-weight:600;'>{j['nome']}</div>", unsafe_allow_html=True)
+                if c2.button("⚽", key=f"btn_gol_{time_key}_{j['id']}", help=f"Gol – {j['nome']}"):
                     db.registrar_scout(partida_id=pid, jogador_id=j['id'], tipo="gol", time=time_key)
-                    if time_key == "A":
-                        st.session_state.gols_a += 1
-                    else:
-                        st.session_state.gols_b += 1
+                    if time_key == "A": st.session_state.gols_a += 1
+                    else: st.session_state.gols_b += 1
                     st.rerun()
-                
-                if c3.button("🅰️", key=f"btn_ass_{time_key}_{j['id']}", help=f"Assistência para {j['nome']}"):
+                if c3.button("🅰️", key=f"btn_ass_{time_key}_{j['id']}", help=f"Assist – {j['nome']}"):
                     db.registrar_scout(partida_id=pid, jogador_id=j['id'], tipo="assistencia", time=time_key)
                     st.rerun()
-                    
-                st.markdown("<hr style='margin: 0.2rem 0; border-color: rgba(255,255,255,0.05);'>", unsafe_allow_html=True)
 
         with col_sa:
-            render_lineup(st.session_state.time_a, "A", "#6B21A8")
+            render_lineup(st.session_state.time_a, "A")
         with col_sb:
-            render_lineup(st.session_state.time_b, "B", "#536DFE")
+            render_lineup(st.session_state.time_b, "B")
 
     # ABA 3: ESTATÍSTICAS
     with tab_stats:
