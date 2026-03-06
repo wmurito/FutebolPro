@@ -54,23 +54,22 @@ def _init_state():
 
 _init_state()
 
-# CSS customizado
-# Forçando sempre tema claro
-tema = "light"
+# CSS customizado - Dark Mode Premium
+tema = "dark"
 
-hex_bg = "#F8F5FA"
-hex_text = "#111827"
-hex_glass_bg = "rgba(255, 255, 255, 0.85)"
-hex_glass_border = "rgba(0, 0, 0, 0.15)"
+hex_bg = "#0F0C1A"
+hex_text = "#F0E6FF"
+hex_glass_bg = "rgba(30, 20, 50, 0.85)"
+hex_glass_border = "rgba(150, 100, 255, 0.2)"
 css_root = """
 :root {
-    --color-bg-deep: #F8F5FA;
-    --color-neon-g: #6B21A8;
-    --color-neon-b: #9333EA;
-    --color-text-main: #111827;
-    --color-text-muted: #64748B;
-    --color-glass-bg: rgba(255, 255, 255, 0.85);
-    --color-glass-border: rgba(0, 0, 0, 0.15);
+    --color-bg-deep: #0F0C1A;
+    --color-neon-g: #7C3AED;
+    --color-neon-b: #A855F7;
+    --color-text-main: #F0E6FF;
+    --color-text-muted: #9D86C4;
+    --color-glass-bg: rgba(30, 20, 50, 0.85);
+    --color-glass-border: rgba(150, 100, 255, 0.2);
     --font-display: 'Bebas Neue', sans-serif;
     --font-body: 'Chakra Petch', sans-serif;
 }
@@ -80,18 +79,27 @@ st.markdown(f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Chakra+Petch:wght@400;500;600;700&display=swap');
 
-    /* Reset e base - Neon Stadium Nights Configs */
     {css_root}
 
-    .stApp {{ 
-        background-color: var(--color-bg-deep) !important; 
-        background-image: radial-gradient(circle at 15% 50%, rgba(223, 179, 255, 0.03), transparent 25%),
-                          radial-gradient(circle at 85% 30%, rgba(178, 102, 255, 0.03), transparent 25%) !important;
+    .stApp {{
+        background-color: var(--color-bg-deep) !important;
+        background-image:
+            radial-gradient(circle at 20% 30%, rgba(124, 58, 237, 0.12), transparent 40%),
+            radial-gradient(circle at 80% 70%, rgba(168, 85, 247, 0.08), transparent 40%) !important;
     }}
 
     h1, h2, h3, p, div, span, label, .stMarkdown, .stText {{
         font-family: var(--font-body);
         color: var(--color-text-main) !important;
+    }}
+
+    /* Força o fundo escuro nos inputs Streamlit */
+    .stTextInput > div > div > input,
+    .stNumberInput > div > div > input,
+    .stSelectbox > div > div {{
+        background-color: rgba(30, 20, 50, 0.9) !important;
+        color: var(--color-text-main) !important;
+        border-color: var(--color-glass-border) !important;
     }}
 </style>
 """, unsafe_allow_html=True)
@@ -185,74 +193,71 @@ st.markdown("""
         font-weight: 700;
     }
 
-    /* Times sorteados Glassmorphism */
+    /* Times sorteados - Dark Card */
     .team-card {
-        background: var(--color-glass-bg);
-        border-radius: 20px;
-        padding: 2rem;
+        background: rgba(25, 15, 45, 0.9);
+        border-radius: 16px;
+        padding: 1rem;
         backdrop-filter: blur(12px);
         position: relative;
     }
-    .team-a { 
-        border: 2px solid var(--color-neon-g);
-        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    }
-    .team-b { 
-        border: 2px solid var(--color-neon-b);
-        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    }
+    .team-a { border: 1px solid rgba(124, 58, 237, 0.5); }
+    .team-b { border: 1px solid rgba(168, 85, 247, 0.4); }
     
     .team-header {
         font-family: var(--font-display);
-        font-size: 2.5rem;
-        letter-spacing: 4px;
-        margin-bottom: 1.5rem;
+        font-size: 1.4rem;
+        letter-spacing: 3px;
+        margin-bottom: 0.8rem;
         text-transform: uppercase;
-        text-align: center;
-    }
-    .team-a .team-header { 
-        color: var(--color-neon-g); 
-    }
-    .team-b .team-header { 
-        color: var(--color-neon-b); 
-    }
-
-    /* Player pill Flat */
-    .player-pill {
         display: flex;
-        justify-content: space-between;
         align-items: center;
-        background: rgba(0, 0, 0, 0.05);
-        border: 1px solid var(--color-glass-border);
-        border-left: 4px solid var(--color-neon-g);
-        border-radius: 6px;
-        padding: 0.6rem 1rem;
-        margin: 0.4rem 0;
-        font-size: 0.95rem;
+        gap: 0.4rem;
+    }
+    .team-a .team-header { color: #A78BFA; }
+    .team-b .team-header { color: #C4B5FD; }
+
+    /* Player row dark */
+    .player-pill {
+        background: rgba(30, 20, 55, 0.7);
+        border: 1px solid rgba(120, 80, 220, 0.2);
+        border-left: 3px solid var(--color-neon-g);
+        border-radius: 8px;
+        padding: 0.5rem 0.7rem;
+        margin: 0.3rem 0;
+        font-size: 0.88rem;
         color: var(--color-text-main);
         font-weight: 600;
-        letter-spacing: 1px;
-        transition: all 0.2s;
-    }
-    .player-pill:hover {
-        background: rgba(178, 102, 255, 0.1);
-        border-left-width: 6px;
     }
     .player-pill .nivel {
         background: var(--color-neon-g);
         color: #fff;
         border-radius: 4px;
-        padding: 0.1rem 0.5rem;
-        font-size: 0.75rem;
+        padding: 0.1rem 0.4rem;
+        font-size: 0.7rem;
         font-weight: 700;
     }
-    
     .player-pill-b { border-left-color: var(--color-neon-b); }
-    .player-pill-b:hover { background: rgba(223, 179, 255, 0.1); }
-    .player-pill-b .nivel { 
-        background: var(--color-neon-b); 
-        color: #fff;
+    .player-pill-b .nivel { background: var(--color-neon-b); }
+
+    /* Botões de ação compactos por jogador (Gol / Assist / Cartão) */
+    .action-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.2rem 0.55rem;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        border: 1px solid;
+        cursor: pointer;
+        transition: all 0.15s;
+        margin-right: 0.2rem;
+        text-decoration: none;
     }
+    .btn-gol  { background: rgba(34,197,94,0.15);  border-color: #22C55E; color: #86EFAC; }
+    .btn-assist { background: rgba(124,58,237,0.15); border-color: #7C3AED; color: #C4B5FD; }
+    .btn-cartao { background: rgba(234,179,8,0.15);  border-color: #CA8A04; color: #FDE68A; }
 
     /* Cronômetro Arena */
     .cronometro {
@@ -343,73 +348,64 @@ st.markdown("""
     .nivel-2 { background: #FF6D00; color: var(--color-bg-deep); }
     .nivel-1 { background: #FF2A2A; color: var(--color-bg-deep); box-shadow: 0 0 10px rgba(255, 42, 42, 0.5); }
 
-    /* Customização NATIVA Streamlit */
-    
-    /* Sidebar */
+    /* Sidebar escura */
     [data-testid="stSidebar"] {
-        background-color: #030407 !important;
-        border-right: 1px solid var(--color-glass-border);
+        background-color: #080512 !important;
+        border-right: 1px solid rgba(120,80,220,0.2);
     }
-    
-    [data-testid="stSidebar"] h1, 
-    [data-testid="stSidebar"] h2, 
-    [data-testid="stSidebar"] h3, 
-    [data-testid="stSidebar"] p, 
-    [data-testid="stSidebar"] div, 
-    [data-testid="stSidebar"] span, 
-    [data-testid="stSidebar"] label,
-    [data-testid="stSidebar"] .stMarkdown {
-        color: #FFFFFF !important;
+    [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3,
+    [data-testid="stSidebar"] p, [data-testid="stSidebar"] div, [data-testid="stSidebar"] span,
+    [data-testid="stSidebar"] label, [data-testid="stSidebar"] .stMarkdown {
+        color: #E9D5FF !important;
     }
-    
-    /* Botões Padrão */
+
+    /* Botões padrão dark */
     .stButton > button {
-        background: #FFFFFF !important;
-        color: var(--color-neon-g) !important;
-        border: 1px solid var(--color-neon-g) !important;
+        background: rgba(30, 20, 55, 0.9) !important;
+        color: #C4B5FD !important;
+        border: 1px solid rgba(124, 58, 237, 0.6) !important;
         border-radius: 8px !important;
         font-family: var(--font-body) !important;
         font-weight: 600 !important;
-        letter-spacing: 2px !important;
-        text-transform: uppercase;
         transition: all 0.2s ease !important;
     }
     .stButton > button:hover {
         background: var(--color-neon-g) !important;
         color: #FFFFFF !important;
+        border-color: var(--color-neon-g) !important;
         transform: translateY(-2px);
     }
-    
-    /* Botões Primary (Roxo) */
+    /* Botão Primary */
     .stButton > button[data-testid="baseButton-primary"] {
         background: var(--color-neon-g) !important;
-        border: 1px solid var(--color-neon-g) !important;
+        border: none !important;
         color: #FFFFFF !important;
     }
     .stButton > button[data-testid="baseButton-primary"]:hover {
         background: var(--color-neon-b) !important;
-        border-color: var(--color-neon-b) !important;
         transform: translateY(-2px);
     }
 
-    /* Inputs numéricos e texts */
-    input, .stSelectbox > div > div {
-        font-family: var(--font-body) !important;
-        font-size: 1rem !important;
+    /* Tabs compactas escuras */
+    .stTabs [data-baseweb="tab-list"] {
+        background: transparent !important;
+        gap: 0.2rem;
     }
-
-    /* Tabs */
     .stTabs [data-baseweb="tab"] {
-        color: var(--color-text-muted);
-        font-family: var(--font-display);
-        font-size: 1.2rem;
-        letter-spacing: 2px;
+        background: rgba(25, 15, 50, 0.7) !important;
+        color: var(--color-text-muted) !important;
+        font-family: var(--font-body);
+        font-size: 0.85rem !important;
+        font-weight: 600;
+        padding: 0.4rem 1rem !important;
+        border-radius: 8px 8px 0 0 !important;
     }
     .stTabs [aria-selected="true"] {
-        color: var(--color-neon-b) !important;
+        background: rgba(124, 58, 237, 0.25) !important;
+        color: #C4B5FD !important;
     }
     .stTabs [data-baseweb="tab-highlight"] {
-        background-color: var(--color-neon-b) !important;
+        background-color: var(--color-neon-g) !important;
     }
 
     /* Divider */
